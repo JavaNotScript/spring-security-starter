@@ -1,19 +1,21 @@
 package com.gicovi.security.config;
 
+import com.gicovi.security.properties.SecurityProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
-@AutoConfiguration
+
+@AutoConfiguration(beforeName = "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;")
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableConfigurationProperties(SecurityProperties.class)
-@EnableWebSecurity
 @ConditionalOnProperty(
         prefix = "gicovi.security",
         name = "enabled",
@@ -25,15 +27,17 @@ public class SecurityStarterAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(SecurityFilterChain.class)
     public SecurityFilterChain securityFilterChain(HttpSecurity security, SecurityProperties securityProperties){
-        System.out.println("Our security config created");
+
         return security
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(requests ->
-                        requests.requestMatchers(
-                                securityProperties.getPublicEndpoints()
-                                        .toArray(new String[0]))
-                                .permitAll()
-                                .anyRequest().authenticated()
+                .authorizeHttpRequests(request -> {
+                    if (!securityProperties.getPublicEndpointsList().isEmpty()){
+                        request.requestMatchers(
+                                securityProperties.getPublicEndpointsList().toArray(String[]::new))
+                                .permitAll();
+                    }
+                    request.anyRequest().authenticated();
+                        }
                 )
                 .httpBasic(Customizer.withDefaults())
                 .build();

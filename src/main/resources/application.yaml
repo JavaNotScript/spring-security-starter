@@ -1,0 +1,6 @@
+gicovi:
+  security:
+    enabled: true
+    public-endpoints-list:
+      - /api/public
+      - /api/login
