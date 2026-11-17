@@ -1,5 +1,6 @@
 package com.gicovi.security.config;
 
+import com.gicovi.security.properties.SecurityProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
@@ -11,18 +12,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class SecurityStarterAutoConfigurationTest {
 
-    @Configuration
-    @EnableWebSecurity
-    static class TestSecurityConfig {
-    }
-
     private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(SecurityStarterAutoConfiguration.class))
             .withUserConfiguration(TestSecurityConfig.class)
             .withPropertyValues("gicovi.security.enabled=true");
+    private final WebApplicationContextRunner runner = new WebApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(SecurityStarterAutoConfiguration.class))
+            .withUserConfiguration(TestSecurityConfig.class)
+            .withPropertyValues("gicovi.security.enabled=false");
+    private final WebApplicationContextRunner webApplicationContextRunner = new WebApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(SecurityStarterAutoConfiguration.class))
+            .withUserConfiguration(TestSecurityConfig.class);
+    private final WebApplicationContextRunner getContextRunner = new WebApplicationContextRunner()
+            .withUserConfiguration(SecurityStarterAutoConfiguration.class)
+            .withUserConfiguration(TestSecurityConfig.class)
+            .withPropertyValues("gicovi.security.public-endpoints-list[0]=/api/login",
+                    "gicovi.security.public-endpoints-list[1]=/api/register");
 
     @Test
-    void securityFilterIsCreated() {
+    void securityFilterIsCreatedWhenEnabled() {
         contextRunner.run(
                 context -> {
                     assertThat(context).hasNotFailed();
@@ -32,17 +40,55 @@ public class SecurityStarterAutoConfigurationTest {
     }
 
     @Test
-    void securityFilterChainDisabled() {
-        new WebApplicationContextRunner()
-                .withPropertyValues("gicovi.security.enabled=false")
-                .run(context -> {
-                    assertThat(context).hasNotFailed();
-                    assertThat(context).doesNotHaveBean(SecurityFilterChain.class);
-                });
+    void securityFilterChainWhenDisabled() {
+        runner.run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).doesNotHaveBean(SecurityFilterChain.class);
+        });
 
     }
 
+    @Test
+    void securityFilterChainWhenEnabledPropertyIsMissing() {
+        webApplicationContextRunner
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(SecurityFilterChain.class);
+                });
+    }
 
+    @Test
+    void securityFilterChainCreatedWithPublicEndpoints() {
+        contextRunner.withPropertyValues("gicovi.security.public-endpoints-list[0]=/api/login",
+                        "gicovi.security.public-endpoints-list[1]=/api/register")
+                .run(
+                        context -> {
+                            assertThat(context).hasNotFailed();
+                            assertThat(context).hasSingleBean(SecurityFilterChain.class);
 
+                            context.getBeansOfType(SecurityProperties.class).forEach((name, bean) ->
+                                    System.out.println(name + " -> " + bean.getPublicEndpointsList()));
+                        }
+                );
+    }
+
+    @Test
+    void endpointsMatch() {
+        getContextRunner.run(
+                        context -> {
+                            assertThat(context).hasNotFailed();
+                            SecurityProperties securityProperties = context.getBean(SecurityProperties.class);
+
+                            assertThat(securityProperties.getPublicEndpointsList())
+                                    .containsExactly("/api/login","/api/register");
+                        }
+                );
+    }
+
+    @Configuration
+    @EnableWebSecurity
+    static class TestSecurityConfig {
+    }
 }
+
 
