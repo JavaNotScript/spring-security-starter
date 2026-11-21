@@ -2,16 +2,14 @@ package com.gicovi.security.properties;
 
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "gicovi.security")
-@EnableConfigurationProperties
 public class SecurityProperties {
-    private boolean enabled = true;
-    private List<String> publicEndpointsList = new ArrayList<>();
+    private boolean enabled;
+    private List<String> publicEndpoints = new ArrayList<>();
 
     public boolean isEnabled() {
         return enabled;
@@ -21,11 +19,11 @@ public class SecurityProperties {
         this.enabled = enabled;
     }
 
-    public List<String> getPublicEndpointsList() {
-        return publicEndpointsList;
+    public List<String> getPublicEndpoints() {
+        return publicEndpoints;
     }
 
-    public void setPublicEndpointsList(List<String> publicEndpointsList) {
-        this.publicEndpointsList = publicEndpointsList;
+    public void setPublicEndpoints(List<String> publicEndpoints) {
+        this.publicEndpoints = publicEndpoints;
     }
 }

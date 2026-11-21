@@ -1,6 +1,6 @@
 gicovi:
   security:
     enabled: true
-    public-endpoints-list:
+    public-endpoints:
       - /api/public
       - /api/login
